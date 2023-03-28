@@ -1,0 +1,3 @@
+[submodule "aglio"]
+	path = aglio
+	url = https://github.com/dominicpoeschko/aglio.git
