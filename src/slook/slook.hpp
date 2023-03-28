@@ -2,30 +2,95 @@
 
 #include <aglio/format.hpp>
 #include <aglio/packager.hpp>
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <fmt/format.h>
 #include <span>
+#include <utility>
 
 namespace slook {
-template<template<typename> typename Vector, typename String, typename SendFunction, typename TimerFunction>
+template<
+  template<typename>
+  typename Vector,
+  typename String,
+  typename SendFunction,
+  typename ServiceCallback>
 struct Lookup {
-    SendFunction       send_f;
-    TimerFunction timer_register_f;
+    template<typename SendFunction_>
+    Lookup(SendFunction_&& sendFunction_)
+      : sendFunction{std::forward<SendFunction_>(sendFunction_)} {}
 
-    template<typename SendCb, typename TimerRegisterCb>
-    Lookup(SendCb&& send_f_, TimerRegisterCb&& timer_register_f_)
-      : send_f{std::forward<SendCb>(send_f_)}
-      , timer_register_f{std::forward<TimerRegisterCb>(timer_register_f_)} {}
+    void messageCallback(std::span<std::byte const> data) {
+        auto const p = packager::unpack<slook::CommandSet<String>>(data);
 
-    using packager = aglio::Packager<aglio::IPConfig>;
-
-    void message_callback(std::span<std::byte const> data) {
-        auto const p = packager::unpack<slook::CommandSet<Vector, String>>(data);
-        fmt::print("{} {}\n", data.size(), p);
+        if(p) {
+            std::visit([this](auto const& v) { handle(v); }, *p);
+        }
     }
 
-    void timer_callback() {}
+    void addService(slook::Service<String> const& new_service) {
+        if(
+          services.end()
+          == std::find_if(services.begin(), services.end(), [&](auto const& service) {
+                 return service.name == new_service.name;
+             }))
+        {
+            services.push_back(new_service);
+
+            slook::ServiceLookup::Response<String> res;
+            res.service = new_service;
+            send(res);
+        }
+    }
+
+    template<typename Cb>
+    void findServices(String const& name, Cb&& cb) {
+        if(
+          serviceCallbacks.end()
+          == std::find_if(serviceCallbacks.begin(), serviceCallbacks.end(), [&](auto const& scb) {
+                 return scb.first == name;
+             }))
+        {
+            serviceCallbacks.emplace_back(name, ServiceCallback{std::forward<Cb>(cb)});
+        }
+        ServiceLookup::Request<String> req;
+        req.serviceName = name;
+        send(req);
+    }
+
+private:
+    using packager = aglio::Packager<aglio::IPConfig>;
+    SendFunction            sendFunction;
+    Vector<Service<String>> services;
+
+    Vector<std::pair<String, ServiceCallback>> serviceCallbacks;
+    template<typename T>
+    void send(T const& v) {
+        Vector<std::byte> buffer;
+        packager::pack(buffer, slook::CommandSet<String>{v});
+        sendFunction(buffer);
+    }
+
+    void handle(slook::ServiceLookup::Request<String> const& v) {
+        for(auto const& s : services) {
+            if(v.serviceName == s.name) {
+                slook::ServiceLookup::Response<String> res;
+                res.service = s;
+                send(res);
+            }
+        }
+    }
+
+    void handle(slook::ServiceLookup::Response<String> const& v) {
+        auto const it
+          = std::find_if(serviceCallbacks.begin(), serviceCallbacks.end(), [&](auto const& scb) {
+                return scb.first == v.service.name;
+            });
+        if(it != serviceCallbacks.end()) {
+            it->second(v.service);
+        }
+    }
 };
 }   // namespace slook
 

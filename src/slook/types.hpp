@@ -12,30 +12,12 @@ enum Protocol { TCP, UDP };
 
 template<typename String>
 struct Service {
-    String        name;
-    std::uint16_t port;
-    Protocol      protocol;
+    String         name;
+    IPAddress      address;
+    std::uint16_t  port;
+    Protocol       protocol;
 };
 
-template<typename String>
-struct ServiceResponce {
-    String          nodeName;
-    IPAddress       address;
-    Service<String> service;
-};
-
-template<typename String>
-struct NameResponce {
-    String    nodeName;
-    IPAddress address;
-};
-
-template<typename String>
-struct Shutup {
-    std::uint32_t num;
-    String        serviceName;
-    std::uint16_t time;
-};
 }   // namespace slook
 
 #include <TypeDescriptor_types.hpp>
