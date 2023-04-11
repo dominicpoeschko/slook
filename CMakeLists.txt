@@ -7,7 +7,7 @@ add_subdirectory(recreated_goon)
 
 recreated_goon_generate(
   slook_type_descriptors OUTPUT_DIRECTORY slook_type_descriptors FILES
-  src/slook/types.hpp src/slook/commands.hpp)
+  src/slook/slook_types.hpp src/slook/slook_commands.hpp)
 
 add_library(slook INTERFACE)
 target_include_directories(slook INTERFACE src)

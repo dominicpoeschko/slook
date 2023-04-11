@@ -1,5 +1,5 @@
 #pragma once
-#include "commands.hpp"
+#include "slook_commands.hpp"
 
 #include <aglio/format.hpp>
 #include <aglio/packager.hpp>
