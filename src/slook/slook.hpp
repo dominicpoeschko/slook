@@ -73,9 +73,22 @@ private:
         sendFunction(buffer);
     }
 
+    static bool serviceNameMatches(std::string_view query, std::string_view name) {
+        if(query == name) {
+            return true;
+        }
+
+        if(query.ends_with("#")) {
+            if(name.starts_with(query.substr(0, query.size() - 1))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void handle(slook::ServiceLookup::Request<String> const& v) {
         for(auto const& s : services) {
-            if(v.serviceName == s.name) {
+            if(serviceNameMatches(v.serviceName, s.name)) {
                 slook::ServiceLookup::Response<String> res;
                 res.service = s;
                 send(res);
@@ -86,7 +99,7 @@ private:
     void handle(slook::ServiceLookup::Response<String> const& v) {
         auto const it
           = std::find_if(serviceCallbacks.begin(), serviceCallbacks.end(), [&](auto const& scb) {
-                return scb.first == v.service.name;
+                return serviceNameMatches(scb.first, v.service.name);
             });
         if(it != serviceCallbacks.end()) {
             it->second(v.service);
