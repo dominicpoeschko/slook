@@ -18,6 +18,7 @@ struct Service {
     IPAddress      address;
     std::uint16_t  port;
     Protocol       protocol;
+    constexpr auto operator<=>(Service const&) const = default;
 };
 
 }   // namespace slook
