@@ -1,3 +1,5 @@
+#pragma once
+
 #include <aglio/type_descriptor.hpp>
 #include <array>
 #include <cstdint>
@@ -20,4 +22,4 @@ struct Service {
 
 }   // namespace slook
 
-#include <TypeDescriptor_types.hpp>
+#include <TypeDescriptor_slook_types.hpp>

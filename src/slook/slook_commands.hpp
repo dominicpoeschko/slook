@@ -1,5 +1,5 @@
 #pragma once
-#include "types.hpp"
+#include "slook_types.hpp"
 
 #include <aglio/type_descriptor.hpp>
 #include <optional>
@@ -22,4 +22,4 @@ using CommandSet = std::variant<ServiceLookup::Request<String>, ServiceLookup::R
 
 }   // namespace slook
 
-#include <TypeDescriptor_commands.hpp>
+#include <TypeDescriptor_slook_commands.hpp>
