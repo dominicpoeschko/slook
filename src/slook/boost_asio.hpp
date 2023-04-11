@@ -1,27 +1,25 @@
-#include <fmt/format.h>
-#include <fmt/ranges.h>
-//
-#include <aglio/format.hpp>
-#include <aglio/packager.hpp>
-#include <boost/asio.hpp>
-#include <functional>
-#include <iostream>
-#include <slook/slook.hpp>
-#include <string_view>
+#pragma once
 
-struct LookupServer {
+#include "slook.hpp"
+
+#include <boost/asio.hpp>
+#include <string>
+#include <vector>
+
+namespace slook {
+struct AsioServer {
 private:
+    template<typename T>
+    using Vec = std::vector<T>;
+
     using lookup_t = slook::Lookup<
-      std::vector,
+      Vec,
       std::string,
       std::function<void(std::vector<std::byte> const&)>,
       std::function<void(slook::Service<std::string> const&)>>;
 
 public:
-    LookupServer(
-      boost::asio::io_context& ioc_,
-      std::uint16_t            port,
-      std::string_view         multicastAddress)
+    AsioServer(boost::asio::io_context& ioc_, std::uint16_t port, std::string_view multicastAddress)
       : ioc{ioc_}
       , socket{ioc}
       , lookup{
@@ -64,6 +62,9 @@ private:
     }
 
     void handle_send(boost::system::error_code error) {
+        if(error) {
+            //TODO
+        }
         sending = false;
         if(!openSendData.empty()) {
             startSend(openSendData.front());
@@ -85,22 +86,4 @@ private:
         }
     }
 };
-
-int main(int argc, char** argv) {
-    boost::asio::io_context ioc;
-
-    boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
-    signals.async_wait([&ioc](boost::system::error_code const&, int) { ioc.stop(); });
-
-    LookupServer server{ioc, 7331, "239.255.13.37"};
-
-    slook::Service<std::string> s;
-    s.name     = argv[1];
-    s.protocol = slook::Protocol::TCP;
-    s.port     = 12345;
-    s.address  = slook::IPv4Address{std::byte{127}, std::byte{0}, std::byte{0}, std::byte{1}};
-    server.getLookup().addService(s);
-    server.getLookup().findServices(argv[2], [](auto x) { fmt::print("found {}\n", x); });
-
-    ioc.run();
-}
+}   // namespace slook
