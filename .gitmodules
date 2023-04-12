@@ -1,9 +1,6 @@
 [submodule "aglio"]
 	path = aglio
 	url = https://github.com/dominicpoeschko/aglio.git
-[submodule "recreated_goon"]
-	path = recreated_goon
-	url = https://github.com/dominicpoeschko/recreated_goon.git
 [submodule "cmake_helpers"]
 	path = cmake_helpers
 	url = https://github.com/dominicpoeschko/cmake_helpers.git
