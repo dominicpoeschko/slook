@@ -12,13 +12,13 @@ using IPAddress   = std::variant<IPv4Address, IPv6Address>;
 
 enum Protocol { TCP, UDP };
 
-template<typename String>
+template<typename String, template<typename> typename Vector>
 struct Service {
-    String         name;
-    IPAddress      address;
-    std::uint16_t  port;
-    Protocol       protocol;
-    auto operator<=>(Service const&) const = default;
+    String            name;
+    Vector<IPAddress> addresses;
+    std::uint16_t     port;
+    Protocol          protocol;
+    auto              operator<=>(Service const&) const = default;
 };
 
 }   // namespace slook

@@ -12,13 +12,13 @@ private:
     template<typename T>
     using Vec = std::vector<T>;
 
-    using lookup_t = slook::Lookup<
+public:
+    using Lookup_t = slook::Lookup<
       Vec,
       std::string,
       std::function<void(std::vector<std::byte> const&)>,
-      std::function<void(slook::Service<std::string> const&)>>;
+      std::function<void(slook::Service<std::string, Vec> const&)>>;
 
-public:
     AsioServer(boost::asio::io_context& ioc_, std::uint16_t port, std::string_view multicastAddress)
       : ioc{ioc_}
       , socket{ioc}
@@ -35,7 +35,7 @@ public:
         recv();
     }
 
-    lookup_t& getLookup() { return lookup; }
+    Lookup_t& getLookup() { return lookup; }
 
 private:
     boost::asio::ip::udp::endpoint      sendEndpoint;
@@ -45,7 +45,7 @@ private:
 
     boost::asio::io_service&     ioc;
     boost::asio::ip::udp::socket socket;
-    lookup_t                     lookup;
+    Lookup_t                     lookup;
 
     void startSend(std::vector<std::byte> const& data) {
         sending = true;
@@ -78,6 +78,7 @@ private:
             handle_receive_from(ec, s);
         });
     }
+
     void send(std::vector<std::byte> const& data) {
         if(!sending) {
             startSend(data);

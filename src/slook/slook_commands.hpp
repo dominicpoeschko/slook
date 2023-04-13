@@ -11,14 +11,15 @@ namespace ServiceLookup {
     struct Request {
         String serviceName;
     };
-    template<typename String>
+    template<typename String, template<typename> typename Vector>
     struct Response {
-        Service<String> service;
+        Service<String, Vector> service;
     };
 }   // namespace ServiceLookup
 
-template<typename String>
-using CommandSet = std::variant<ServiceLookup::Request<String>, ServiceLookup::Response<String>>;
+template<typename String, template<typename> typename Vector>
+using CommandSet
+  = std::variant<ServiceLookup::Request<String>, ServiceLookup::Response<String, Vector>>;
 
 }   // namespace slook
 

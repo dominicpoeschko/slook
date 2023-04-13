@@ -8,9 +8,10 @@ struct TypeDescriptorGen<slook::ServiceLookup::Request<String>>
 };
 }   // namespace aglio
 namespace aglio {
-template<typename String>
-struct TypeDescriptorGen<slook::ServiceLookup::Response<String>>
-  : MemberList<MemberDescriptor<&slook::ServiceLookup::Response<String>::service, "service">> {
+template<typename String, template<typename> class Vector>
+struct TypeDescriptorGen<slook::ServiceLookup::Response<String, Vector>>
+  : MemberList<
+      MemberDescriptor<&slook::ServiceLookup::Response<String, Vector>::service, "service">> {
     static constexpr std::string_view Name{"Response"};
     static constexpr std::string_view QualifiedName{"slook::ServiceLookup::Response"};
 };
