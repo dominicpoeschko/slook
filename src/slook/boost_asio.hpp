@@ -8,16 +8,13 @@
 
 namespace slook {
 struct AsioServer {
-private:
-    template<typename T>
-    using Vec = std::vector<T>;
 
 public:
     using Lookup_t = slook::Lookup<
-      Vec,
+      std::vector,
       std::string,
       std::function<void(std::vector<std::byte> const&)>,
-      std::function<void(slook::Service<std::string, Vec> const&)>>;
+      std::function<void(slook::Service<std::string, std::vector> const&)>>;
 
     AsioServer(boost::asio::io_context& ioc_, std::uint16_t port, std::string_view multicastAddress)
       : ioc{ioc_}
