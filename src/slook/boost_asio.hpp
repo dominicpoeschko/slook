@@ -8,13 +8,18 @@
 
 namespace slook {
 struct AsioServer {
+    template<typename T, std::size_t>
+    using Vec = std::vector<T>;
+
+    template<std::size_t S>
+    using Str = std::string;
 
 public:
     using Lookup_t = slook::Lookup<
-      std::vector,
-      std::string,
-      std::function<void(std::vector<std::byte> const&)>,
-      std::function<void(slook::Service<std::string, std::vector> const&)>>;
+      Vec,
+      Str,
+      std::function<void(std::span<std::byte const>)>,
+      std::function<void(slook::Service<Str, Vec> const&)>>;
 
     AsioServer(boost::asio::io_context& ioc_, std::uint16_t port, std::string_view multicastAddress)
       : ioc{ioc_}
@@ -44,7 +49,7 @@ private:
     boost::asio::ip::udp::socket socket;
     Lookup_t                     lookup;
 
-    void startSend(std::vector<std::byte> const& data) {
+    void startSend(std::span<std::byte const> data) {
         sending = true;
         socket.async_send_to(boost::asio::buffer(data), sendEndpoint, [this](auto ec, auto) {
             handle_send(ec);
@@ -76,7 +81,7 @@ private:
         });
     }
 
-    void send(std::vector<std::byte> const& data) {
+    void send(std::span<std::byte const> data) {
         if(!sending) {
             startSend(data);
         } else {

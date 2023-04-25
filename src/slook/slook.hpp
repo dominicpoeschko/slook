@@ -1,22 +1,23 @@
 #pragma once
 #include "slook_commands.hpp"
 
-#include <aglio/format.hpp>
 #include <aglio/packager.hpp>
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
-#include <fmt/format.h>
 #include <span>
 #include <utility>
 
 namespace slook {
 template<
-  template<typename>
+  template<typename, std::size_t>
   typename Vector,
+  template<std::size_t>
   typename String,
   typename SendFunction,
-  typename ServiceCallback>
+  typename ServiceCallback,
+  std::size_t MaxServices  = 2,
+  std::size_t MaxCallbacks = 2>
 struct Lookup {
     using Request    = slook::ServiceLookup::Request<String>;
     using Service    = slook::Service<String, Vector>;
@@ -31,13 +32,13 @@ struct Lookup {
         auto const p = packager::unpack<CommandSet>(data);
 
         if(p) {
-            std::visit([this](auto const& v) { handle(v); }, *p);
+            std::visit([&](auto const& v) { handle(v); }, *p);
         }
     }
 
     void addService(Service const& new_service) {
         auto const it  = std::find_if(services.begin(), services.end(), [&](auto const& service) {
-            return service.name == new_service.name;
+            return std::string_view{service.name} == std::string_view{new_service.name};
         });
         bool       add = false;
         if(it == services.end()) {
@@ -57,7 +58,7 @@ struct Lookup {
     }
 
     template<typename Cb>
-    void findServices(String const& name, Cb&& cb) {
+    void findServices(std::string_view name, Cb&& cb) {
         if(
           serviceCallbacks.end()
           == std::find_if(serviceCallbacks.begin(), serviceCallbacks.end(), [&](auto const& scb) {
@@ -73,13 +74,14 @@ struct Lookup {
 
 private:
     using packager = aglio::Packager<aglio::IPConfig>;
-    SendFunction    sendFunction;
-    Vector<Service> services;
+    SendFunction                 sendFunction;
+    Vector<Service, MaxServices> services;
 
-    Vector<std::pair<String, ServiceCallback>> serviceCallbacks;
+    Vector<std::pair<String<slook::MaxNameSize>, ServiceCallback>, MaxCallbacks> serviceCallbacks;
+
     template<typename T>
     void send(T const& v) {
-        Vector<std::byte> buffer;
+        Vector<std::byte, 1024> buffer;
         packager::pack(buffer, CommandSet{v});
         sendFunction(buffer);
     }

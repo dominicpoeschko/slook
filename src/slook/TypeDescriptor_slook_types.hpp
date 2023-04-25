@@ -1,5 +1,5 @@
 namespace aglio {
-template<typename String, template<typename> class Vector>
+template<template<std::size_t> class String, template<typename, std::size_t> class Vector>
 struct TypeDescriptorGen<slook::Service<String, Vector>>
   : MemberList<
       MemberDescriptor<&slook::Service<String, Vector>::name, "name">,

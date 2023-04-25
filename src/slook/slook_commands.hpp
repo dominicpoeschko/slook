@@ -7,17 +7,17 @@
 
 namespace slook {
 namespace ServiceLookup {
-    template<typename String>
+    template<template<std::size_t> typename String>
     struct Request {
-        String serviceName;
+        String<MaxNameSize> serviceName;
     };
-    template<typename String, template<typename> typename Vector>
+    template<template<std::size_t> typename String, template<typename, std::size_t> typename Vector>
     struct Response {
         Service<String, Vector> service;
     };
 }   // namespace ServiceLookup
 
-template<typename String, template<typename> typename Vector>
+template<template<std::size_t> typename String, template<typename, std::size_t> typename Vector>
 using CommandSet
   = std::variant<ServiceLookup::Request<String>, ServiceLookup::Response<String, Vector>>;
 
