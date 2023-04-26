@@ -25,7 +25,7 @@ public:
       : ioc{ioc_}
       , socket{ioc}
       , lookup{
-          [this](std::vector<std::byte> const& data) { send(data); },
+          [this](std::span<std::byte const> data) { send(data); },
         } {
         auto const ep         = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port);
         auto const mc_address = boost::asio::ip::make_address(multicastAddress);
@@ -85,7 +85,11 @@ private:
         if(!sending) {
             startSend(data);
         } else {
-            openSendData.push_back(data);
+            std::vector<std::byte> d{};
+            d.resize(data.size());
+            std::copy(data.begin(), data.end(), d.begin());
+
+            openSendData.push_back(d);
         }
     }
 };
