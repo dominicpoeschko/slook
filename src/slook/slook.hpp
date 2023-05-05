@@ -28,11 +28,11 @@ struct Lookup {
     Lookup(SendFunction_&& sendFunction_)
       : sendFunction{std::forward<SendFunction_>(sendFunction_)} {}
 
-    void messageCallback(std::span<std::byte const> data) {
+    void messageCallback(slook::IPAddress const& address, std::span<std::byte const> data) {
         auto const p = packager::unpack<CommandSet>(data);
 
         if(p) {
-            std::visit([&](auto const& v) { handle(v); }, *p);
+            std::visit([&](auto const& v) { handle(address, v); }, *p);
         }
     }
 
@@ -53,7 +53,7 @@ struct Lookup {
 
             Response res;
             res.service = new_service;
-            send(res);
+            send(std::nullopt, res);
         }
     }
 
@@ -69,7 +69,7 @@ struct Lookup {
         }
         Request req;
         req.serviceName = name;
-        send(req);
+        send(std::nullopt, req);
     }
 
 private:
@@ -80,10 +80,10 @@ private:
     Vector<std::pair<String<slook::MaxNameSize>, ServiceCallback>, MaxCallbacks> serviceCallbacks;
 
     template<typename T>
-    void send(T const& v) {
+    void send(std::optional<slook::IPAddress> const& address, T const& v) {
         Vector<std::byte, 1024> buffer;
         packager::pack(buffer, CommandSet{v});
-        sendFunction(buffer);
+        sendFunction(address, buffer);
     }
 
     static bool serviceNameMatches(std::string_view query, std::string_view name) {
@@ -99,17 +99,17 @@ private:
         return false;
     }
 
-    void handle(Request const& v) {
+    void handle(slook::IPAddress const& address, Request const& v) {
         for(auto const& s : services) {
             if(serviceNameMatches(v.serviceName, s.name)) {
                 Response res;
                 res.service = s;
-                send(res);
+                send(address, res);
             }
         }
     }
 
-    void handle(Response const& v) {
+    void handle(slook::IPAddress const&, Response const& v) {
         auto const it
           = std::find_if(serviceCallbacks.begin(), serviceCallbacks.end(), [&](auto const& scb) {
                 return serviceNameMatches(scb.first, v.service.name);
