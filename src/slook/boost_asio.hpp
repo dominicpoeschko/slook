@@ -2,11 +2,25 @@
 
 #include "slook.hpp"
 
-#include <boost/asio.hpp>
+#if __has_include(<boost/asio.hpp>)
+    #include <boost/asio.hpp>
+#else
+    #include <asio.hpp>
+#endif
+
 #include <string>
 #include <vector>
 
 namespace slook {
+
+#if __has_include(<boost/asio.hpp>)
+    using ec = boost::system::error_code;
+    namespace asio = boost::asio;
+#else
+    using ec = asio::error_code;
+#endif
+
+
 struct AsioServer {
     template<typename T, std::size_t>
     using Vec = std::vector<T>;
@@ -21,7 +35,7 @@ public:
       std::function<void(std::optional<slook::IPAddress> const&, std::span<std::byte const>)>,
       std::function<void(slook::Service<Str, Vec> const&)>>;
 
-    AsioServer(boost::asio::io_context& ioc_, std::uint16_t port, std::string_view multicastAddress)
+    AsioServer(asio::io_context& ioc_, std::uint16_t port, std::string_view multicastAddress)
       : ioc{ioc_}
       , socket{ioc}
       , lookup{
@@ -29,42 +43,42 @@ public:
               send(address, data);
           },
         } {
-        auto const ep         = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port);
-        auto const mc_address = boost::asio::ip::make_address(multicastAddress);
+        auto const ep         = asio::ip::udp::endpoint(asio::ip::udp::v4(), port);
+        auto const mc_address = asio::ip::make_address(multicastAddress);
         socket.open(ep.protocol());
-        socket.set_option(boost::asio::socket_base::reuse_address{true});
-        socket.set_option(boost::asio::ip::multicast::join_group{mc_address});
+        socket.set_option(asio::socket_base::reuse_address{true});
+        socket.set_option(asio::ip::multicast::join_group{mc_address});
         socket.bind(ep);
-        multicastSendEndpoint = boost::asio::ip::udp::endpoint(mc_address, port);
+        multicastSendEndpoint = asio::ip::udp::endpoint(mc_address, port);
         recv();
     }
 
     Lookup_t& getLookup() { return lookup; }
 
 private:
-    boost::asio::ip::udp::endpoint multicastSendEndpoint;
+    asio::ip::udp::endpoint multicastSendEndpoint;
     std::vector<std::byte>         recvData;
     bool                           sending{false};
-    std::vector<std::pair<boost::asio::ip::udp::endpoint, std::vector<std::byte>>> openSendData;
+    std::vector<std::pair<asio::ip::udp::endpoint, std::vector<std::byte>>> openSendData;
 
-    boost::asio::ip::udp::endpoint lastRecvEndpoint;
+    asio::ip::udp::endpoint lastRecvEndpoint;
 
-    boost::asio::io_service&     ioc;
-    boost::asio::ip::udp::socket socket;
+    asio::io_service&     ioc;
+    asio::ip::udp::socket socket;
     Lookup_t                     lookup;
 
     void startSend() {
         sending = true;
         socket.async_send_to(
-          boost::asio::buffer(openSendData.front().second),
+          asio::buffer(openSendData.front().second),
           openSendData.front().first,
-          [this](auto ec, auto) {
+          [this](auto error, auto) {
               openSendData.erase(openSendData.begin());
-              handle_send(ec);
+              handle_send(error);
           });
     }
 
-    void handle_receive_from(boost::system::error_code error, std::size_t bytesRecvd) {
+    void handle_receive_from(ec error, std::size_t bytesRecvd) {
         if(!error) {
             slook::IPAddress address;
             if(lastRecvEndpoint.address().is_v4()) {
@@ -89,7 +103,7 @@ private:
         recv();
     }
 
-    void handle_send(boost::system::error_code error) {
+    void handle_send(ec error) {
         if(error) {
             //TODO
         }
@@ -102,40 +116,40 @@ private:
     void recv() {
         recvData.resize(1024);
         socket.async_receive_from(
-          boost::asio::buffer(recvData, 1024),
+          asio::buffer(recvData, 1024),
           lastRecvEndpoint,
-          [this](auto ec, auto s) { handle_receive_from(ec, s); });
+          [this](auto error, auto s) { handle_receive_from(error, s); });
     }
 
     void send(std::optional<slook::IPAddress> const& address, std::span<std::byte const> data) {
-        boost::asio::ip::udp::endpoint ep;
+        asio::ip::udp::endpoint ep;
 
         if(!address) {
             ep = multicastSendEndpoint;
         } else {
             if(std::holds_alternative<slook::IPv4Address>(*address)) {
                 slook::IPv4Address const& slook_address = std::get<slook::IPv4Address>(*address);
-                boost::asio::ip::address_v4::bytes_type bytes;
+                asio::ip::address_v4::bytes_type bytes;
                 std::transform(
                   slook_address.begin(),
                   slook_address.end(),
                   bytes.begin(),
                   [](auto x) {
-                      return static_cast<boost::asio::ip::address_v4::bytes_type::value_type>(x);
+                      return static_cast<asio::ip::address_v4::bytes_type::value_type>(x);
                   });
-                boost::asio::ip::address_v4 boost_address{bytes};
+                asio::ip::address_v4 boost_address{bytes};
                 ep.address(boost_address);
             } else {
                 slook::IPv6Address const& slook_address = std::get<slook::IPv6Address>(*address);
-                boost::asio::ip::address_v6::bytes_type bytes;
+                asio::ip::address_v6::bytes_type bytes;
                 std::transform(
                   slook_address.begin(),
                   slook_address.end(),
                   bytes.begin(),
                   [](auto x) {
-                      return static_cast<boost::asio::ip::address_v6::bytes_type::value_type>(x);
+                      return static_cast<asio::ip::address_v6::bytes_type::value_type>(x);
                   });
-                boost::asio::ip::address_v6 boost_address{bytes};
+                asio::ip::address_v6 boost_address{bytes};
                 ep.address(boost_address);
             }
 
