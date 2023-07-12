@@ -5,6 +5,10 @@
 #include <cstdint>
 #include <variant>
 
+#if __has_include(<fmt/format.h>)
+    #include <fmt/format.h>
+#endif
+
 namespace slook {
 
 static constexpr std::size_t MaxNameSize = 128;
@@ -25,6 +29,9 @@ struct Service {
     auto                           operator<=>(Service const&) const = default;
 };
 
+#if __has_include(<fmt/format.h>)
+inline static auto format_as(Protocol p) { return fmt::underlying(p); }
+#endif
 }   // namespace slook
 
 #include "TypeDescriptor_slook_types.hpp"
